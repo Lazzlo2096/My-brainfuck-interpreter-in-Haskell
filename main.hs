@@ -1,13 +1,13 @@
 -- BF interpreter
--- main = putStr "Hello!"
--- main = interpretBF (parseBF input) [0] 0
+
+-- main = interpretBF (parseBF input) ([],[])
 
 input = "+-++." -- [2]
 
 data BFterm = 
-  Add |
-  Sub |
-  Next |
+  Increment |
+  Decrement |
+  Forward |
   Back |
   Read |
   Print
@@ -16,48 +16,28 @@ data BFterm =
 parseBF a = map parseBFterms a
 
 parseBFterms c
-  | c=='+' = Add
-  | c=='-' = Sub
+  | c=='+' = Increment
+  | c=='-' = Decrement
   | c=='.' = Print
-  | c=='>' = Next
+  | c=='>' = Forward
   | c=='<' = Back
   | c==',' = Read
   
+-- data MemSpace a = YYY ([a],[a]) -- world
 
-myMapElement :: [t] -> Int -> (t -> t) -> [t] --Автовыведено
-myMapElement list pointer f = let (x,xs) = myPop pointer list   in  myInsert xs pointer (f x)
+interpretBF :: (Num a, Enum a) => [BFterm] -> ([a], [a]) -> ([a], [a]) -- Автовыведено
+interpretBF (x:xs) memSpace = interpretBF xs $ change x memSpace
+interpretBF [] memSpace = memSpace 
 
-myPop index list = (list!!index, take index list ++ drop (index+1) list)
-myInsert list pointer new_element = let (ys,zs) = splitAt pointer list   in   ys ++ [new_element] ++ zs
+-- apply3TupleToFunc f (x,y,z) = f x y z -- Есть ли в Хаскеле такая стандартная функция?
 
-interpretBF :: Num a => [BFterm] -> [a] -> Int -> [a] --Автовыведено
-interpretBF (x:xs) memSpace pointer
-  | null xs = memSpace -- так он не обрабатывает последний символ
-  | x==Add = interpretBF xs ( myMapElement memSpace pointer (+1) ) pointer
-  | x==Sub = interpretBF xs ( myMapElement memSpace pointer (\x -> x-1) ) pointer
-  | x==Print = interpretBF xs ( myMapElement memSpace pointer id ) pointer  --тут должен делать побочный эффект, кек -- пока просто пропускает
- 
-interpretBF' :: Enum a => [BFterm] -> [a] -> Int -> [a] -- Ещё раз Автовыведено
-interpretBF' (x:xs) memSpace pointer = 
-  interpretBF' xs ( myMapElement memSpace pointer (getFunc4Value x) ) ((getFunc4Pointer x) pointer)
-interpretBF' [] memSpace pointer = memSpace 
-
-getFunc4Value x
-  | x==Add = succ
-  | x==Sub = pred
-  -- | x==Print = id
-  | otherwise = id
-
-getFunc4Pointer x
-  | x==Next = succ
-  | x==Back = pred
-  | otherwise = id
-  
--- getFunc4memSpace x
-  -- | x==Next = ...
-  -- | x==Back = ...
-  -- | otherwise = ...
- 
-testt [] = 5
-testt (x:[]) = x
-testt (x:xs) = testt xs
+-- вместо пары pointer и [] можно юзать просто ( (xss:xs) , (z:zs)) где z - будет элемент подуказателем
+-- подсматрел это у https://github.com/jrp2014/BF/blob/master/src/BF.hs#L65
+change term (zs, []) = change term (zs, [0])
+change term ([], (x:xs)) = change term ([0], (x:xs)) -- почему только с этой строкой выводиться варнинг если её переместить после определения change ?
+change term (zs, (x:xs))
+  | term==Increment = ( zs, succ x :xs )
+  | term==Decrement = ( zs, pred x :xs )
+  | term==Forward = ( zs++[x], xs )
+  | term==Back = ( init zs, last zs :x:xs )
+  | otherwise = (zs, (x:xs)) -- do nothing
