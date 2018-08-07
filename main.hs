@@ -55,6 +55,6 @@ change term (zs, (x:xs))
   | term==Forward = ((zs++[x], xs), [])
   | term==Back = ((init zs, last zs :x:xs), [])
   | term==Print = ((zs, (x:xs)), [do putStr [chr x]])
-  | term==Read = ((zs, (x:xs)), [do getLine])
+  -- | term==Read = ((zs, (x:xs)), [do getLine]) -- нужно чтобы изза ленивости приостанавливалось вычелесение слудющего элемента
   -- или можно сдеать так, но как (или откуда?) тогда я буду читать? | term==Print = ((zs, (x:xs)), [x] )
   | otherwise = ((zs, (x:xs)), []) -- do nothing
